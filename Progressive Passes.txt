@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Sep 18 23:42:41 2022
+
+@author: edmorris
+"""
+
+# Progressive Pass Analysis
+
+# Import modules
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib import rcParams
+rcParams['figure.dpi'] = 750
+import seaborn as sns
+
+# Import data
+ligue_1_passes = pd.read_csv('Ligue 1 - Progressive Passes.csv')
+ligue_1_passes['Progressive Passes %'] = (ligue_1_passes['Total Progressive Passes'] / ligue_1_passes['Total Passes'])*100
+ligue_1_passes_fill = ligue_1_passes.fillna(0)
+# With one of fewest passes in the league, the % of progressive passes should be higher to utilise the small amount of possession they have
+
+# Order two dataframes on each season
+ligue_1_passes_fill = ligue_1_passes_fill.sort_values(['Progressive Passes %','Season'],ascending=[False,False])
+
+sns.factorplot(x='Progressive Passes %',y='Team',hue='Season',data=ligue_1_passes_fill,kind='bar',palette='seismic')
+plt.title('Progressive Passes (as % of Completed Passes) by Team and Season')
+
+# Troyes were 11th in the league for progressive pass % last season
+# Down to 13th this season
+# Team has even less possession this season, so it's imperative that they play progressively to utilise possession when they do have it

@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Sep 12 16:54:52 2022
+
+@author: edmorris
+"""
+
+# Squad data from: https://fbref.com/en/squads/54195385/Troyes-Stats
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from  matplotlib.ticker import FuncFormatter
+import seaborn as sns
+from matplotlib import rcParams
+rcParams['figure.dpi'] = 750
+
+# Read in data
+encoding_list = ['ascii', 'big5', 'big5hkscs', 'cp037', 'cp273', 'cp424', 'cp437', 'cp500', 'cp720', 'cp737'
+                 , 'cp775', 'cp850', 'cp852', 'cp855', 'cp856', 'cp857', 'cp858', 'cp860', 'cp861', 'cp862'
+                 , 'cp863', 'cp864', 'cp865', 'cp866', 'cp869', 'cp874', 'cp875', 'cp932', 'cp949', 'cp950'
+                 , 'cp1006', 'cp1026', 'cp1125', 'cp1140', 'cp1250', 'cp1251', 'cp1252', 'cp1253', 'cp1254'
+                 , 'cp1255', 'cp1256', 'cp1257', 'cp1258', 'euc_jp', 'euc_jis_2004', 'euc_jisx0213', 'euc_kr'
+                 , 'gb2312', 'gbk', 'gb18030', 'hz', 'iso2022_jp', 'iso2022_jp_1', 'iso2022_jp_2'
+                 , 'iso2022_jp_2004', 'iso2022_jp_3', 'iso2022_jp_ext', 'iso2022_kr', 'latin_1', 'iso8859_2'
+                 , 'iso8859_3', 'iso8859_4', 'iso8859_5', 'iso8859_6', 'iso8859_7', 'iso8859_8', 'iso8859_9'
+                 , 'iso8859_10', 'iso8859_11', 'iso8859_13', 'iso8859_14', 'iso8859_15', 'iso8859_16', 'johab'
+                 , 'koi8_r', 'koi8_t', 'koi8_u', 'kz1048', 'mac_cyrillic', 'mac_greek', 'mac_iceland', 'mac_latin2'
+                 , 'mac_roman', 'mac_turkish', 'ptcp154', 'shift_jis', 'shift_jis_2004', 'shift_jisx0213', 'utf_32'
+                 , 'utf_32_be', 'utf_32_le', 'utf_16', 'utf_16_be', 'utf_16_le', 'utf_7', 'utf_8', 'utf_8_sig']
+
+# Read in 2022-23 squad data
+for encoding in encoding_list:
+    worked = True
+    try:
+        df_2022 = pd.read_csv('Squad_stats 2022-23.csv', encoding=encoding, nrows=30)
+    except:
+        worked = False
+    if worked:
+        print(encoding, ':\n', df_2022.head())
+
+# Read in 2021-22 squad data    
+for encoding in encoding_list:
+    worked = True
+    try:
+        df_2021 = pd.read_csv('Squad_stats 2021-22.csv', encoding=encoding, nrows=30)
+    except:
+        worked = False
+    if worked:
+        print(encoding, ':\n', df_2021.head())
+
+# Clean the 2022 squad data
+df_2022['Nation'] = df_2022['Nation'].str[-3:]
+df_2022['Age'] = df_2022['Age'].str[:2]
+
+# Clean 2021 squad data
+df_2021['Nation'] = df_2021['Nation'].str[-3:]
+df_2021['Age'] = df_2021['Age'].astype(str)
+df_2021['Age'] = df_2021['Age'].str[:2]
+
+# Count number of players at each age
+ages_22 = df_2022.Age.value_counts().reset_index()
+ages_22.columns = ['Age','Count']
+ages_22 = ages_22.sort_values('Age').reset_index(drop=True)
+ages_21 = df_2021.Age.value_counts().reset_index()
+ages_21.columns = ['Age','Count']
+ages_21 = ages_21.sort_values('Age').reset_index(drop=True)
+
+# Pad dataframes with all ages and counts
+age_22_pad = pd.DataFrame({'Age':[27,28,32,33,34],'Count':[0,0,0,0,0]})
+age_21_pad = pd.DataFrame({'Age':[19,27,32,33,36],'Count':[0,0,0,0,0]})
+
+# Concat, format
+ages_22_plot = pd.concat([ages_22,age_22_pad])
+ages_22_plot['Age'] = ages_22_plot['Age'].astype(int)
+ages_22_plot = ages_22_plot.sort_values('Age')
+
+ages_21_plot = pd.concat([ages_21,age_21_pad])
+ages_21_plot['Age'] = ages_21_plot['Age'].astype(int)
+ages_21_plot = ages_21_plot.sort_values('Age')
+
+# Create x axis data
+ages = []
+for i in range(17,37):
+    ages.append(i)
+
+# Find minute-weighted average age
+age_mins_22 = []
+df_2022['Age'] = df_2022['Age'].astype(float)
+df_2022['Min'] = df_2022['Min'].astype(float)
+for i in range(len(df_2022)):
+    temp = df_2022.Age[i].astype(int) * df_2022.Min[i].astype(int)
+    age_mins_22.append(temp)
+
+sum(age_mins_22)/sum(df_2022.Min)
+
+age_mins_21 = []
+df_2021['Age'] = df_2021['Age'].astype(float)
+df_2021['Min'] = df_2021['Min'].astype(float)
+for i in range(len(df_2022)):
+    temp1 = df_2021.Age[i].astype(int) * df_2021.Min[i].astype(int)
+    age_mins_21.append(temp1)
+
+sum(age_mins_21)/sum(df_2021.Min)
+
+
+# Scatter plot of Age vs Minutes Played
+plt.style.use('ggplot')
+fig = plt.figure()
+ax = plt.gca()
+plt.scatter(df_2021.Age,df_2021.Min,marker='x',label='2021 squad',c='red')
+plt.scatter(df_2022.Age,df_2022.Min*5.43,marker='+',c='blue',label='2022 squad \n(scaled for \n38 games)')
+plt.xticks(np.arange(17,37))
+plt.xlabel('Player Age')
+plt.ylabel('Minutes Played')
+plt.legend(loc='best',prop={'size':8.5})
+plt.title('Player Age vs Minutes Played')
+
+
+# Count number of GKs, DEFs, MIDs and CFs in squad for bar chart plots
+squad_dist_ly = df_2021.Pos.value_counts().reset_index()
+squad_dist_ly.columns = ['Position','Number of Players']
+squad_dist_ly = squad_dist_ly.reindex([3,0,2,1])
+squad_dist_ly['Number of Players'] = squad_dist_ly['Number of Players'].astype(int)
+squad_dist_cy = df_2022.Pos.value_counts().reset_index()
+squad_dist_cy.columns = ['Position','Number of Players']
+squad_dist_cy = squad_dist_cy.reindex([3,0,2,1])
+squad_dist_cy['Number of Players'] = squad_dist_cy['Number of Players'].astype(int)
+
+# Create bar chart showing squad depth distributions for both seasons
+sns.set(style='whitegrid')
+#sns.set_palette('Paired')
+plt.figure(2,figsize=(9,8))
+the_grid = GridSpec(2,2)
+plt.subplot(the_grid[0,0],title='Squad depth in each area for 2021/22 season')
+b1 = sns.barplot(x='Number of Players',y='Position',data=squad_dist_ly,palette='Blues')
+b1.set_xticks([0,2,4,6,8,10,12,14])
+#plt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x, _: int(x)))
+plt.subplot(the_grid[0,1],title='Squad depth in each area for 2022/23 season')
+b2 = sns.barplot(x='Number of Players',y='Position',data=squad_dist_cy,palette='YlOrRd')
+b2.set_xticks([0,2,4,6,8,10])
+#plt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x, _: int(x)))
+plt.suptitle('Distribution of squad depth for 2021/22 and 2022/23 seasons',fontsize=20)
